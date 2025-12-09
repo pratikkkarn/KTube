@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DropMint Stream | Premium</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- CORE VARIABLES --- */
+        :root {
+            --bg-deep: #050505;
+            --glass-surface: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-mint: #00ffbf;
+            --accent-glow: rgba(0, 255, 191, 0.5);
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --radius-md: 24px;
+            --radius-sm: 16px;
+            --nav-width: 80px; 
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 255, 191, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(100, 0, 255, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+            user-select: none;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+
+        /* --- SIDEBAR (Desktop) --- */
+        .sidebar {
+            position: fixed;
+            left: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: var(--nav-width);
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 0;
+            gap: 32px;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .nav-icon {
+            font-size: 1.5rem; color: var(--text-muted); cursor: pointer;
+            width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; transition: 0.3s; position: relative;
+        }
+
+        .nav-icon:hover { color: white; background: var(--glass-surface); }
+        .nav-icon.active { 
+            color: var(--bg-deep); background: var(--accent-mint); box-shadow: 0 0 20px var(--accent-glow); 
+        }
+
+        .nav-tooltip {
+            position: absolute; left: 80px; top: 50%; transform: translateY(-50%) translateX(-20px);
+            background: rgba(20, 20, 20, 0.95); border: 1px solid var(--glass-border);
+            padding: 8px 16px; border-radius: 12px; color: white; font-size: 0.9rem; font-weight: 600;
+            white-space: nowrap; opacity: 0; visibility: hidden; pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 1000;
+        }
+        .nav-tooltip::before {
+            content: ''; position: absolute; left: -6px; top: 50%; transform: translateY(-50%);
+            border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-right: 6px solid rgba(20, 20, 20, 0.95);
+        }
+        .nav-icon:hover .nav-tooltip { opacity: 1; visibility: visible; transform: translateY(-50%) translateX(0); color: var(--accent-mint); }
+
+        /* --- CONTAINER --- */
+        .container {
+            margin-left: 140px; padding: 40px 60px; max-width: 1800px;
+            transition: margin 0.3s ease, padding 0.3s ease;
+        }
+
+        /* --- HEADER --- */
+        .header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 50px;
+            flex-wrap: wrap; gap: 20px;
+        }
+        .brand {
+            font-size: 2.2rem; font-weight: 800; letter-spacing: -1.5px;
+            background: linear-gradient(135deg, #fff 30%, var(--text-muted));
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .brand span { color: var(--accent-mint); -webkit-text-fill-color: var(--accent-mint); margin-left: 1px; }
+
+        .search-wrapper { position: relative; width: 450px; transition: width 0.3s ease; }
+        .search-wrapper i { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+        .search-input {
+            width: 100%; background: var(--glass-surface); border: 1px solid var(--glass-border);
+            padding: 16px 20px 16px 50px; border-radius: 30px; color: white; outline: none; transition: 0.3s;
+        }
+        .search-input:focus { background: rgba(255,255,255,0.08); border-color: var(--accent-mint); }
+        
+        /* --- FIXED PROFILE BUTTON --- */
+        .profile-btn { 
+            width: 48px; 
+            height: 48px;
+            min-width: 48px; 
+            border-radius: 50%; 
+            border: 2px solid var(--glass-border); 
+            overflow: hidden; 
+            flex-shrink: 0; 
+            background: #000; 
+            position: relative;
+        }
+        
+        .profile-btn img, 
+        .profile-btn video { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            display: block;
+        }
+
+        /* --- GRID --- */
+        .grid-layout {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 30px;
+        }
+
+        .video-card {
+            background: #111; border-radius: var(--radius-md); overflow: hidden;
+            border: 1px solid var(--glass-border); cursor: pointer; transition: transform 0.3s;
+            display: flex; flex-direction: column;
+        }
+        .video-card:hover { transform: translateY(-8px); border-color: rgba(255,255,255,0.2); }
+        
+        .thumb-box { width: 100%; aspect-ratio: 16/9; background: #1a1a1a; position: relative; overflow: hidden; }
+        .thumb-box img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+        .video-card:hover .thumb-box img { transform: scale(1.05); }
+        .overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.4);
+            display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.3s;
+        }
+        .video-card:hover .overlay { opacity: 1; }
+        .play-circle {
+            width: 50px; height: 50px; background: rgba(255,255,255,0.2); backdrop-filter: blur(5px);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;
+        }
+        .card-details { padding: 18px; flex-grow: 1; background: #0f0f0f; }
+        .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: #eee; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-footer { display: flex; justify-content: space-between; font-size: 0.8rem; color: #666; margin-top: 10px; }
+        .channel-badge { color: var(--accent-mint); background: rgba(0, 255, 191, 0.1); padding: 4px 10px; border-radius: 8px; }
+
+        /* --- MODAL (Desktop Default) --- */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .modal-container {
+            width: 90%; max-width: 1500px; height: 85vh;
+            display: grid; grid-template-columns: 1fr 380px; gap: 30px;
+            transform: scale(0.98); transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .modal-overlay.active .modal-container { transform: scale(1); }
+
+        .player-box {
+            background: black; border-radius: var(--radius-md); overflow: hidden;
+            border: 1px solid #333; display: flex; flex-direction: column;
+            height: 100%;
+        }
+
+        .video-frame {
+            flex-grow: 1; width: 100%; position: relative; background: #000; min-height: 0;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+
+        video { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: contain; outline: none;
+        }
+
+        /* --- CONTROLS --- */
+        .custom-controls {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            padding: 20px 25px; opacity: 0; transition: opacity 0.3s;
+            display: flex; flex-direction: column; gap: 10px; z-index: 20;
+            pointer-events: none; /* Disable clicks when hidden */
+        }
+        
+        /* FIXED: Controls show only when user is active (added via JS) */
+        .video-frame.user-active .custom-controls { 
+            opacity: 1; 
+            pointer-events: auto; /* Enable clicks when visible */
+        }
+
+        .progress-area {
+            height: 5px; width: 100%; background: rgba(255,255,255,0.2);
+            border-radius: 5px; cursor: pointer; position: relative; transition: height 0.1s;
+        }
+        .progress-area:hover { height: 8px; }
+        .progress-bar { height: 100%; width: 0%; background: var(--accent-mint); border-radius: 5px; position: relative; }
+        .progress-bar::after {
+            content: ''; position: absolute; right: -6px; top: 50%; transform: translateY(-50%);
+            height: 14px; width: 14px; background: white; border-radius: 50%; opacity: 0; transition: 0.2s;
+        }
+        .progress-area:hover .progress-bar::after { opacity: 1; }
+
+        .controls-list { display: flex; justify-content: space-between; align-items: center; color: white; }
+        .controls-left, .controls-right { display: flex; align-items: center; gap: 20px; }
+        .control-btn { cursor: pointer; font-size: 1.2rem; transition: 0.2s; color: #ddd; }
+        .control-btn:hover { color: var(--accent-mint); }
+        .time-display { font-size: 0.85rem; font-weight: 500; font-family: monospace; }
+
+        .loader {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1);
+            border-top-color: var(--accent-mint); border-radius: 50%;
+            animation: spin 1s linear infinite; display: none; z-index: 10;
+        }
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        .video-toast {
+            position: absolute; top: 15%; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7); color: white; padding: 10px 20px;
+            border-radius: 30px; font-weight: 600; opacity: 0; transition: 0.3s;
+            backdrop-filter: blur(5px); z-index: 30; pointer-events: none;
+            display: flex; gap: 10px; align-items: center; white-space: nowrap;
+        }
+        .video-toast.show { opacity: 1; top: 20%; }
+
+        /* --- META & REC PANEL --- */
+        .player-meta { 
+            padding: 25px; background: #0f0f0f; border-top: 1px solid #222; flex-shrink: 0; 
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .meta-left { display: flex; flex-direction: column; gap: 5px; width: 80%; }
+        .player-title { font-size: 1.8rem; font-weight: 700; margin: 0; display: -webkit-box; -webkit-line-clamp: 1; line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+        .player-stats { color: var(--text-muted); font-size: 0.9rem; }
+
+        .like-btn-wrapper {
+            display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer;
+        }
+        .like-icon { font-size: 1.8rem; color: #444; transition: 0.3s; }
+        .like-count { font-size: 0.8rem; color: #666; font-weight: 600; }
+        .like-btn-wrapper.active .like-icon {
+            color: var(--accent-mint); transform: scale(1.1); text-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .rec-panel {
+            background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md);
+            padding: 0 20px; display: flex; flex-direction: column; overflow-y: auto;
+        }
+        .rec-header { 
+            position: sticky; top: 0; background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(10px);
+            padding: 25px 0 15px 0; font-size: 0.9rem; font-weight: 800; color: var(--accent-mint); 
+            text-transform: uppercase; z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px;
+        }
+        .rec-panel::-webkit-scrollbar { display: none; }
+        .rec-panel { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .rec-item {
+            display: flex; gap: 15px; cursor: pointer; padding: 12px; 
+            border-radius: 16px; transition: 0.3s; margin-bottom: 5px;
+            border: 1px solid transparent;
+        }
+        .rec-item:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(5px); }
+        .rec-img { width: 120px; aspect-ratio: 16/9; border-radius: 10px; object-fit: cover; background: #222; }
+        .rec-info { display: flex; flex-direction: column; justify-content: center; }
+        .rec-info h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; color: #eee; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .rec-item:hover .rec-info h4 { color: var(--accent-mint); }
+        .rec-info p { font-size: 0.8rem; color: #777; }
+
+        /* =========================================
+           🚀 MOBILE & TABLET RESPONSIVENESS
+           ========================================= */
+
+        @media (max-width: 1024px) {
+            .container { margin-left: 100px; padding: 30px; }
+            .modal-container { width: 95%; height: 90vh; grid-template-columns: 1fr; grid-template-rows: 60% 1fr; gap: 20px; }
+            .rec-panel { overflow-y: visible; }
+            .player-box { border-radius: var(--radius-sm); }
+        }
+
+        @media (max-width: 768px) {
+            
+            /* --- SIDEBAR: Floating Dock --- */
+            .sidebar {
+                position: fixed;
+                bottom: 20px;       
+                left: 50%; 
+                transform: translateX(-50%);
+                top: auto;          
+                width: 90%;         
+                max-width: 380px;   
+                height: 75px;       
+                display: flex;
+                flex-direction: row; 
+                justify-content: space-evenly; 
+                align-items: center;
+                background: #000000; 
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 24px;   
+                padding: 0 10px;
+                gap: 0;             
+                z-index: 1000;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            }
+
+            .nav-icon {
+                width: 50px; 
+                height: 100%;       
+                border-radius: 0;   
+                margin: 0;
+                background: transparent !important; 
+                box-shadow: none !important;
+                color: #666;        
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                position: relative;
+            }
+
+            .nav-tooltip { display: none !important; } 
+
+            .nav-icon.active { 
+                color: var(--accent-mint) !important; 
+                text-shadow: 0 0 15px rgba(0, 255, 191, 0.6);
+            }
+
+            .nav-icon.active::after {
+                content: '';
+                position: absolute;
+                bottom: 15px;      
+                width: 5px;
+                height: 5px;
+                background: var(--accent-mint);
+                border-radius: 50%;
+                box-shadow: 0 0 8px var(--accent-mint);
+            }
+
+            .container { margin-left: 0; padding: 20px 20px 120px 20px; } 
+            .header { flex-direction: column; gap: 20px; align-items: stretch; }
+            .brand { justify-content: center; }
+            .search-wrapper { width: 100%; }
+            .profile-btn { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; }
+            .grid-layout { grid-template-columns: 1fr; gap: 25px; }
+
+            /* --- MODAL ADJUSTMENTS --- */
+            .modal-container {
+                width: 100%; 
+                height: 100%; 
+                max-width: none; 
+                transform: scale(1); 
+                border-radius: 0;
+                display: block; 
+                overflow-y: auto; 
+                background: var(--bg-deep);
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .modal-container::-webkit-scrollbar { display: none; }
+            
+            .player-box { display: contents; border: none; }
+
+            .video-frame {
+                position: sticky; 
+                top: 0;           
+                width: 100%;
+                aspect-ratio: 16/9;
+                height: auto;
+                z-index: 100;     
+                background: black;
+                transition: transform 0.3s;
+            }
+            
+            /* --- LANDSCAPE MODE --- */
+            .video-frame.mobile-landscape {
+                position: fixed !important;
+                top: 50% !important;
+                left: 50% !important;
+                width: 100vh !important; 
+                height: 100vw !important;
+                transform: translate(-50%, -50%) rotate(90deg) !important;
+                z-index: 99999 !important;
+                background: black;
+            }
+            
+            .video-frame.mobile-landscape video {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+            /* Fix Controls in Landscape */
+            .video-frame.mobile-landscape .custom-controls {
+                width: 100% !important; 
+                bottom: 0 !important;
+                padding-bottom: 30px !important; /* Extra padding to avoid bezel */
+            }
+
+            .player-meta {
+                position: relative; 
+                background: var(--bg-deep); 
+                z-index: 50; 
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+            }
+
+            .rec-panel { 
+                border-radius: 0; background: transparent; border: none;
+                height: auto; overflow: visible; padding-bottom: 120px;
+                margin-top: 0;
+            }
+            
+            .rec-header { position: static; background: transparent; backdrop-filter: none; margin-top: 10px; }
+            .control-btn { padding: 10px; font-size: 1.4rem; }
+            .progress-area { height: 8px; }
+        }
+
+        @media (max-width: 480px) {
+            .brand { font-size: 1.8rem; }
+            .player-title { font-size: 1.2rem; }
+            .modal-overlay { background: black; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="nav-icon active" onclick="filterByMode(this, 'home')"><i class="fa-solid fa-house"></i><span class="nav-tooltip">Home</span></div>
+        <div class="nav-icon" onclick="filterByMode(this, 'trending')"><i class="fa-solid fa-fire"></i><span class="nav-tooltip">Trending</span></div>
+        <div class="nav-icon" onclick="filterByMode(this, 'explore')"><i class="fa-solid fa-compass"></i><span class="nav-tooltip">Explore</span></div>
+        <div class="nav-icon" onclick="filterByMode(this, 'favorites')"><i class="fa-regular fa-heart"></i><span class="nav-tooltip">Favorites</span></div>
+        <div class="nav-icon" onclick="filterByMode(this, 'profile')"><i class="fa-regular fa-user"></i><span class="nav-tooltip">Profile</span></div>
+    </nav>
+
+    <div class="container">
+        <header class="header">
+            <div class="brand">DropMint<span>.online</span></div>
+            <div class="search-wrapper">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchInput" class="search-input" placeholder="Search for vibes, beats, stories...">
+            </div>
+            <div class="profile-btn">
+                <video src="Videos/profile.mp4" 
+                       poster="https://via.placeholder.com/100"
+                       autoplay muted loop playsinline></video>
+            </div>
+        </header>
+        <div class="grid-layout" id="videoGrid"></div>
+    </div>
+
+    <div class="modal-overlay" id="videoModal">
+        <div class="modal-container">
+            <div class="player-box">
+                <div class="video-frame" id="videoFrame">
+                    <div id="loadingSpinner" class="loader"></div>
+                    <div id="videoToast" class="video-toast"></div>
+
+                    <video id="mainVideo">
+                        <source src="" type="video/mp4">
+                    </video>
+
+                    <div class="custom-controls">
+                        <div class="progress-area" id="progressArea">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                        <div class="controls-list">
+                            <div class="controls-left">
+                                <i class="fa-solid fa-play control-btn" id="playPauseBtn"></i>
+                                <i class="fa-solid fa-volume-high control-btn" id="volumeBtn"></i>
+                                <div class="time-display">
+                                    <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
+                                </div>
+                            </div>
+                            <div class="controls-right">
+                                <i class="fa-solid fa-expand control-btn" id="fullScreenBtn"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="player-meta">
+                    <div class="meta-left">
+                        <h1 class="player-title" id="playerTitle">Video Title</h1>
+                        <div class="player-stats">
+                            <span id="playerChannel" style="color:var(--accent-mint); font-weight:600;">Channel Name</span>
+                            <span> • </span>
+                            <span id="playerViews">0 Views</span>
+                        </div>
+                    </div>
+                    
+                    <div class="like-btn-wrapper" id="likeButtonWrapper" onclick="toggleLike()">
+                        <i class="fa-solid fa-heart like-icon"></i>
+                        <span class="like-count" id="likeCountDisplay">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="rec-panel">
+                <div id="recList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="Ktubes.js"></script>
+
+    <script>
+        const fsBtn = document.getElementById('fullScreenBtn');
+        const vFrame = document.getElementById('videoFrame');
+        const vPlayer = document.getElementById('mainVideo');
+
+        // --- 1. FULLSCREEN ROTATION LOGIC ---
+        const newFsBtn = fsBtn.cloneNode(true);
+        fsBtn.parentNode.replaceChild(newFsBtn, fsBtn);
+
+        newFsBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Stop click from bubbling to video container
+            const isMobile = window.innerWidth <= 768;
+
+            if (isMobile) {
+                if (vFrame.classList.contains('mobile-landscape')) {
+                    vFrame.classList.remove('mobile-landscape');
+                    newFsBtn.className = "fa-solid fa-expand control-btn"; 
+                } else {
+                    vFrame.classList.add('mobile-landscape');
+                    newFsBtn.className = "fa-solid fa-compress control-btn"; 
+                }
+            } else {
+                if (!document.fullscreenElement) {
+                    if(vFrame.requestFullscreen) vFrame.requestFullscreen();
+                    else if(vFrame.webkitRequestFullscreen) vFrame.webkitRequestFullscreen();
+                } else {
+                    if(document.exitFullscreen) document.exitFullscreen();
+                }
+            }
+        });
+
+        vPlayer.addEventListener('dblclick', () => {
+            newFsBtn.click();
+        });
+
+        // --- 2. AUTO-HIDE CONTROLS LOGIC (Activity Monitor) ---
+        let activityTimeout;
+        
+        function showControls() {
+            vFrame.classList.add('user-active');
+            clearTimeout(activityTimeout);
+            
+            // Hide after 3 seconds of inactivity
+            activityTimeout = setTimeout(() => {
+                // Don't hide if paused (optional, generally better UX to keep controls if paused)
+                if(!vPlayer.paused) {
+                    vFrame.classList.remove('user-active');
+                }
+            }, 3000);
+        }
+
+        // Listen for Mouse Moves (Desktop)
+        vFrame.addEventListener('mousemove', showControls);
+        
+        // Listen for Touches (Mobile)
+        vFrame.addEventListener('touchstart', showControls);
+        
+        // Listen for Clicks/Taps on the frame (to toggle immediately)
+        vFrame.addEventListener('click', (e) => {
+            // If clicking controls specifically, don't toggle, just show
+            if(e.target.closest('.custom-controls')) {
+                showControls();
+                return;
+            }
+
+            // Toggle logic
+            if (vFrame.classList.contains('user-active')) {
+                // If visible and playing, hide immediately
+                if(!vPlayer.paused) {
+                    vFrame.classList.remove('user-active');
+                    clearTimeout(activityTimeout);
+                } else {
+                    // If paused, keep them
+                    showControls();
+                }
+            } else {
+                showControls();
+            }
+        });
+
+        // Ensure controls show initially when playing starts
+        vPlayer.addEventListener('play', showControls);
+        vPlayer.addEventListener('pause', () => {
+            vFrame.classList.add('user-active'); // Keep controls visible when paused
+            clearTimeout(activityTimeout);
+        });
+
+    </script>
+</body>
+</html>
